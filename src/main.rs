@@ -13,11 +13,21 @@ mod moons;
 mod texture;
 mod validate_textures;
 mod solar_system;
+mod skybox;
+mod orbits;
+mod warp;
+mod spaceship;
+mod collision;
 
 use crate::matrix::new_matrix4;
 use crate::shaders::get_planet_color;
 use crate::texture::Texture;
 use crate::solar_system::{create_solar_system, get_unique_model_paths};
+use crate::skybox::Skybox;
+use crate::orbits::draw_orbit;
+use crate::warp::{WarpSystem, WarpTarget};
+use crate::spaceship::Spaceship;
+use crate::collision::check_spaceship_collisions;
 use framebuffer::Framebuffer;
 use vertex::Vertex;
 use triangle::triangle;
@@ -156,6 +166,7 @@ fn main() {
     let mut time = 0.0f32;
     let mut auto_rotate = true;
     let mut auto_orbit = true;
+    let mut show_controls = true; // Mostrar controles al inicio
     
     // Camera/viewport control
     let mut camera_offset = Vector3::new(0.0, 0.0, 0.0);
@@ -199,17 +210,150 @@ fn main() {
 
     // Crear el sistema solar
     let bodies = create_solar_system();
+    
+    // Crear skybox con estrellas
+    let skybox = Skybox::new(300, window_width as u32, window_height as u32);
+    
+    // Crear la nave espacial
+    let spaceship = match Spaceship::new() {
+        Ok(ship) => {
+            println!("✓ Nave espacial cargada exitosamente (nuevo modelo SpaceShip.obj)");
+            println!("  - Vértices: {}", ship.get_vertices().len());
+            println!("  - Textura: {}", if ship.get_texture().is_some() { "Sí" } else { "No (usa materiales de color)" });
+            Some(ship)
+        }
+        Err(e) => {
+            eprintln!("⚠ No se pudo cargar la nave: {}", e);
+            None
+        }
+    };
+    
+    // Crear sistema de warp
+    let mut warp_system = WarpSystem::new();
+    
+    // Configurar objetivos de warp para cada planeta
+    for (i, body) in bodies.iter().enumerate() {
+        warp_system.targets.push(WarpTarget {
+            name: body.name.clone(),
+            position: Vector3::zero(), // Se calculará dinámicamente
+            zoom_level: if i == 0 { 1.2 } else { 2.0 }, // Sol más alejado, planetas más cerca
+        });
+    }
 
     while !window.window_should_close() {
-        handle_input(&mut window, &mut camera_offset, &mut camera_zoom, &mut system_rotation, &mut auto_rotate, &mut auto_orbit);
+        handle_input(&mut window, &mut camera_offset, &mut camera_zoom, &mut system_rotation, &mut auto_rotate, &mut auto_orbit, &mut show_controls, &mut warp_system, &bodies, time);
 
         // Update time
         time += 0.016; // Approximately 60 FPS
+        
+        // Actualizar warp system
+        if warp_system.is_warping {
+            // Recalcular la posición del planeta destino en tiempo real
+            let target_index = warp_system.current_target;
+            if target_index < bodies.len() {
+                let body = &bodies[target_index];
+                let orbit_angle = time * body.orbit_speed;
+                let target_x = orbit_angle.cos() * body.orbit_radius;
+                let target_y = orbit_angle.sin() * body.orbit_radius;
+                
+                // Actualizar el target con la posición actual del planeta (como offset de cámara)
+                let target_zoom = warp_system.targets[target_index].zoom_level;
+                warp_system.targets[target_index].position = Vector3::new(-target_x * target_zoom, -target_y * target_zoom, 0.0);
+            }
+            
+            let (new_offset, new_zoom) = warp_system.update(0.016);
+            camera_offset = new_offset;
+            camera_zoom = new_zoom;
+        }
 
         framebuffer.clear();
+        
+        // Renderizar skybox primero (fondo de estrellas)
+        skybox.render(&mut framebuffer, time);
+        
+        // Efecto visual de warp - anillos pulsantes
+        if warp_system.is_warping {
+            let intensity = warp_system.get_warp_intensity();
+            let center_x = (window_width / 2) as i32;
+            let center_y = (window_height / 2) as i32;
+            
+            // Dibujar anillos pulsantes desde el centro
+            for ring in 0..5 {
+                let radius = (50 + ring * 80) as f32 * intensity;
+                let brightness = (1.0 - ring as f32 * 0.15) * (1.0 - intensity) * 0.5;
+                let color = Vector3::new(
+                    brightness * 0.5,
+                    brightness * 0.7,
+                    brightness
+                );
+                
+                // Dibujar círculo aproximado con puntos
+                for angle in (0..360).step_by(3) {
+                    let rad = (angle as f32).to_radians();
+                    let x = center_x + (rad.cos() * radius) as i32;
+                    let y = center_y + (rad.sin() * radius) as i32;
+                    framebuffer.point(x, y, color);
+                }
+            }
+        }
 
         // Center point for the solar system (affected by camera offset)
         let center = Vector3::new(400.0 + camera_offset.x, 300.0 + camera_offset.y, 0.0 + camera_offset.z);
+        
+        // Renderizar órbitas planetarias (círculos simples fijos)
+        for body in bodies.iter() {
+            if body.orbit_radius > 0.0 {
+                let orbit_color = Vector3::new(0.4, 0.5, 0.7); // Color azul brillante
+                let segments = 200; // Más segmentos para líneas continuas
+                
+                // Generar puntos de la órbita circular simple
+                for i in 0..segments {
+                    let angle = (i as f32 / segments as f32) * 2.0 * std::f32::consts::PI;
+                    
+                    // Punto en el plano eclíptico (sin rotar)
+                    let x = (center.x + angle.cos() * body.orbit_radius * camera_zoom) as i32;
+                    let y = (center.y + angle.sin() * body.orbit_radius * camera_zoom) as i32;
+                    
+                    // Dibujar el punto de la órbita con grosor (3x3 píxeles)
+                    for dx in -1..=1 {
+                        for dy in -1..=1 {
+                            let px = x + dx;
+                            let py = y + dy;
+                            if px >= 0 && px < framebuffer.width as i32 &&
+                               py >= 0 && py < framebuffer.height as i32 {
+                                framebuffer.point(px, py, orbit_color);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Renderizar órbita de la nave espacial (color diferente)
+        if let Some(ref ship) = spaceship {
+            let ship_orbit_color = Vector3::new(0.6, 0.8, 0.4); // Verde claro
+            let segments = 200;
+            
+            for i in 0..segments {
+                let angle = (i as f32 / segments as f32) * 2.0 * std::f32::consts::PI;
+                let x = (center.x + angle.cos() * ship.orbit_radius * camera_zoom) as i32;
+                let y = (center.y + angle.sin() * ship.orbit_radius * camera_zoom) as i32;
+                
+                // Dibujar órbita de la nave con línea punteada (más sutil)
+                if i % 4 == 0 {
+                    for dx in -1..=1 {
+                        for dy in -1..=1 {
+                            let px = x + dx;
+                            let py = y + dy;
+                            if px >= 0 && px < framebuffer.width as i32 &&
+                               py >= 0 && py < framebuffer.height as i32 {
+                                framebuffer.point(px, py, ship_orbit_color);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // Render all celestial bodies
         for body in bodies.iter() {
@@ -222,31 +366,24 @@ fn main() {
 
             let body_translation = if auto_orbit {
                 let orbit_angle = time * body.orbit_speed;
-                // Create a proper 3D elliptical orbit with inclination
-                // Each planet has different orbital characteristics
-                let inclination = body.planet_type() as f32 * 0.4; // Stronger inclination per planet
                 
-                // Primary orbit in X-Y plane
-                let orbit_x = orbit_angle.cos() * body.orbit_radius;
-                let orbit_y = orbit_angle.sin() * body.orbit_radius;
-                
-                // Z component (vertical oscillation due to orbit inclination)
-                // The Z position changes as the planet orbits
-                let orbit_z = (orbit_angle * inclination).sin() * body.orbit_radius * 0.5;
+                // Órbitas circulares perfectas en el plano X-Y
+                // IMPORTANTE: Aplicar el mismo zoom que a las órbitas para mantener alineación
+                let orbit_x = orbit_angle.cos() * body.orbit_radius * camera_zoom;
+                let orbit_y = orbit_angle.sin() * body.orbit_radius * camera_zoom;
                 
                 Vector3::new(
                     center.x + orbit_x,
                     center.y + orbit_y,
-                    center.z + orbit_z,
+                    center.z, // Mantener en el mismo plano Z que el centro
                 )
             } else {
                 center
             };
 
-            // Apply system-wide rotation around center
-            let rotated_translation = rotate_point_around_center(body_translation, center, system_rotation);
-
-            let model_matrix = create_model_matrix(rotated_translation, body.scale * camera_zoom, body_rotation);
+            // MANTENER PLANETAS FIJOS EN SUS ÓRBITAS - NO ROTAR POSICIONES
+            // Solo crear el model_matrix directamente sin rotación de sistema
+            let model_matrix = create_model_matrix(body_translation, body.scale * camera_zoom, body_rotation);
             let uniforms = Uniforms {
                 model_matrix,
                 time,
@@ -262,9 +399,9 @@ fn main() {
             for moon in &body.moons {
                 let moon_orbit_angle = time * moon.orbit_speed;
                 let moon_pos = Vector3::new(
-                    rotated_translation.x + moon_orbit_angle.cos() * moon.orbit_radius,
-                    rotated_translation.y + moon_orbit_angle.sin() * moon.orbit_radius,
-                    rotated_translation.z,
+                    body_translation.x + moon_orbit_angle.cos() * moon.orbit_radius,
+                    body_translation.y + moon_orbit_angle.sin() * moon.orbit_radius,
+                    body_translation.z,
                 );
                 
                 let moon_rotation = if auto_rotate {
@@ -289,7 +426,7 @@ fn main() {
             // Renderizar anillos si el planeta los tiene
             if body.has_rings {
                 let ring_scale = 1.8;
-                let ring_matrix = create_model_matrix(rotated_translation, body.scale * ring_scale * camera_zoom, Vector3::new(0.2, 0.0, 0.0));
+                let ring_matrix = create_model_matrix(body_translation, body.scale * ring_scale * camera_zoom, Vector3::new(0.2, 0.0, 0.0));
                 let ring_uniforms = Uniforms {
                     model_matrix: ring_matrix,
                     time,
@@ -302,6 +439,44 @@ fn main() {
             }
         }
 
+        // Renderizar la nave espacial (orbita en el plano eclíptico)
+        let mut collision_detected = false;
+        let mut collision_planet_idx: Option<usize> = None;
+        
+        if let Some(ref ship) = spaceship {
+            let ship_position = ship.get_position(time, center);
+            let ship_rotation = ship.get_rotation(time);
+            
+            // Check for collisions with planets
+            let mut planet_positions: Vec<(Vector3, f32)> = Vec::new();
+            for body in bodies.iter() {
+                let orbit_angle = if auto_orbit {
+                    time * body.orbit_speed
+                } else {
+                    0.0
+                };
+                let orbit_x = orbit_angle.cos() * body.orbit_radius * camera_zoom;
+                let orbit_y = orbit_angle.sin() * body.orbit_radius * camera_zoom;
+                let planet_pos = Vector3::new(center.x + orbit_x, center.y + orbit_y, center.z);
+                planet_positions.push((planet_pos, body.scale * camera_zoom));
+            }
+            
+            // Detect collisions
+            if let Some(idx) = check_spaceship_collisions(ship_position, ship.scale * camera_zoom * 0.5, &planet_positions) {
+                collision_detected = true;
+                collision_planet_idx = Some(idx);
+            }
+            
+            let ship_matrix = create_model_matrix(ship_position, ship.scale * camera_zoom, ship_rotation);
+            let ship_uniforms = Uniforms {
+                model_matrix: ship_matrix,
+                time,
+                planet_type: 10, // Tipo especial para la nave
+            };
+            
+            render(&mut framebuffer, &ship_uniforms, ship.get_vertices());
+        }
+
         // Display framebuffer and text overlay
         framebuffer.update_texture();
         
@@ -309,24 +484,101 @@ fn main() {
         draw_handle.clear_background(Color::BLACK);
         framebuffer.draw(&mut draw_handle);
         
-        // Draw HUD - Top info
-        draw_handle.draw_text(&format!("FPS: {}", draw_handle.get_fps()), 10, 10, 20, Color::GREEN);
-        draw_handle.draw_text("Sistema Solar Completo - 9 Planetas (en orden)", 10, 40, 20, Color::WHITE);
-        draw_handle.draw_text(&format!("Time: {:.1}s | Cuerpos: {} | Orden: ☀️ ☿️ ♀ 🌍 ♂ ♃ ♄ ♅ ♆", time, bodies.len()), 10, 70, 15, Color::GRAY);
+        // UI Minimalista - Solo información esencial
         
-        // Show status with clear indicators
-        let status_rotate = if auto_rotate { "▶ ACTIVA" } else { "⏸ PAUSADA" };
-        let status_orbit = if auto_orbit { "▶ ACTIVA" } else { "⏸ PAUSADA" };
-        draw_handle.draw_text(&format!("Rotación: {} | Órbita: {}", status_rotate, status_orbit), 10, 100, 14, Color::YELLOW);
+        // Top-right: FPS (pequeño y discreto)
+        let fps_text = format!("{}", draw_handle.get_fps());
+        draw_handle.draw_text(&fps_text, window_width as i32 - 40, 10, 14, Color::new(150, 150, 150, 180));
         
-        // Draw HUD - Bottom controls
-        let y_offset = window_height as i32 - 150;
-        draw_handle.draw_text("CONTROLES:", 10, y_offset, 18, Color::YELLOW);
-        draw_handle.draw_text("SPACE: Pausar/Reanudar rotacion", 10, y_offset + 25, 14, Color::LIGHTGRAY);
-        draw_handle.draw_text("O: Pausar/Reanudar orbita", 10, y_offset + 45, 14, Color::LIGHTGRAY);
-        draw_handle.draw_text("Flechas: Mover camara | S/A: Zoom", 10, y_offset + 65, 14, Color::LIGHTGRAY);
-        draw_handle.draw_text("Q/W: Rot X | E/R: Rot Y | T/Y: Rot Z", 10, y_offset + 85, 14, Color::LIGHTGRAY);
-        draw_handle.draw_text(&format!("Zoom: {:.2}x", camera_zoom), 10, y_offset + 110, 14, Color::LIGHTGRAY);
+        // Center: Solo mostrar durante warp
+        if warp_system.is_warping {
+            let target_name = &warp_system.targets[warp_system.current_target].name;
+            let warp_text = format!("{}", target_name);
+            let warp_intensity = warp_system.get_warp_intensity();
+            let alpha = (200.0 * (1.0 - warp_intensity.abs())) as u8;
+            
+            // Centrar texto aproximadamente
+            let text_x = (window_width as i32 / 2) - (target_name.len() as i32 * 10);
+            draw_handle.draw_text(
+                &warp_text,
+                text_x.max(50),
+                (window_height as i32) / 2 - 50,
+                32,
+                Color::new(200, 200, 255, alpha)
+            );
+        }
+        
+        // Collision warning (if detected)
+        if collision_detected {
+            if let Some(idx) = collision_planet_idx {
+                let planet_name = &bodies[idx].name;
+                let warning_text = format!("⚠ COLLISION: {}", planet_name);
+                let text_width = (warning_text.len() * 10) as i32;
+                draw_handle.draw_rectangle(
+                    (window_width as i32 / 2) - (text_width / 2) - 10,
+                    100,
+                    text_width + 20,
+                    30,
+                    Color::new(255, 50, 50, 200)
+                );
+                draw_handle.draw_text(
+                    &warning_text,
+                    (window_width as i32 / 2) - (text_width / 2),
+                    107,
+                    18,
+                    Color::WHITE
+                );
+            }
+        }
+        
+        // Bottom-left: Indicadores mínimos
+        let bottom_y = window_height as i32 - 30;
+        let icon_inactive = Color::new(100, 100, 100, 150);
+        let icon_active = Color::new(100, 200, 255, 255);
+        
+        // Rotación - R
+        let rot_color = if auto_rotate { icon_active } else { icon_inactive };
+        draw_handle.draw_text("R", 15, bottom_y, 18, rot_color);
+        
+        // Órbita - O
+        let orb_color = if auto_orbit { icon_active } else { icon_inactive };
+        draw_handle.draw_text("O", 40, bottom_y, 18, orb_color);
+        
+        // Zoom (restaurado)
+        draw_handle.draw_text(&format!("{:.1}x", camera_zoom), 65, bottom_y, 16, Color::new(150, 150, 150, 180));
+        
+        // Bottom-right: Help hint
+        draw_handle.draw_text("H", window_width as i32 - 30, bottom_y, 16, Color::new(150, 150, 150, 180));
+        
+        // Mostrar controles si está activado
+        if show_controls {
+            let panel_x = 20;
+            let panel_y = 80;
+            let line_height = 22;
+            let text_color = Color::new(220, 220, 220, 255);
+            let title_color = Color::new(100, 200, 255, 255);
+            
+            // Fondo semi-transparente
+            draw_handle.draw_rectangle(panel_x - 10, panel_y - 10, 300, 192, Color::new(0, 0, 0, 180));
+            
+            // Título
+            draw_handle.draw_text("CONTROLES", panel_x, panel_y, 20, title_color);
+            
+            let mut y = panel_y + 30;
+            draw_handle.draw_text("SPACE    Pausar/Reanudar rotacion", panel_x, y, 14, text_color);
+            y += line_height;
+            draw_handle.draw_text("O        Pausar/Reanudar orbita", panel_x, y, 14, text_color);
+            y += line_height;
+            draw_handle.draw_text("Flechas  Mover camara (X/Y)", panel_x, y, 14, text_color);
+            y += line_height;
+            draw_handle.draw_text("W / Q    Mover camara (Z)", panel_x, y, 14, text_color);
+            y += line_height;
+            draw_handle.draw_text("S / A    Zoom In / Out", panel_x, y, 14, text_color);
+            y += line_height;
+            draw_handle.draw_text("1-9      Warp a planeta", panel_x, y, 14, text_color);
+            y += line_height + 5;
+            draw_handle.draw_text("H        Mostrar/Ocultar ayuda", panel_x, y, 14, title_color);
+        }
 
         thread::sleep(Duration::from_millis(16));
     }
@@ -362,8 +614,12 @@ fn handle_input(
     system_rotation: &mut Vector3,
     auto_rotate: &mut bool,
     auto_orbit: &mut bool,
+    show_controls: &mut bool,
+    warp_system: &mut WarpSystem,
+    bodies: &[solar_system::CelestialBody],
+    time: f32,
 ) {
-    // Camera movement (arrow keys)
+    // Camera movement 3D (arrow keys for X/Y, W/Q for Z-axis)
     if window.is_key_down(KeyboardKey::KEY_RIGHT) {
         camera_offset.x += 10.0;
     }
@@ -377,7 +633,15 @@ fn handle_input(
         camera_offset.y += 10.0;
     }
     
-    // Zoom (S/A keys)
+    // Z-axis camera movement (3D depth control)
+    if window.is_key_down(KeyboardKey::KEY_W) {
+        camera_offset.z += 10.0;  // Move camera forward (into screen)
+    }
+    if window.is_key_down(KeyboardKey::KEY_Q) {
+        camera_offset.z -= 10.0;  // Move camera backward (out of screen)
+    }
+    
+    // Zoom (S/A keys) - RESTAURADO
     if window.is_key_down(KeyboardKey::KEY_S) {
         *camera_zoom += 0.05;
         if *camera_zoom > 3.0 { *camera_zoom = 3.0; }
@@ -385,26 +649,6 @@ fn handle_input(
     if window.is_key_down(KeyboardKey::KEY_A) {
         *camera_zoom -= 0.05;
         if *camera_zoom < 0.3 { *camera_zoom = 0.3; }
-    }
-    
-    // System rotation (Q/W/E/R/T/Y keys)
-    if window.is_key_down(KeyboardKey::KEY_Q) {
-        system_rotation.x -= PI / 30.0;
-    }
-    if window.is_key_down(KeyboardKey::KEY_W) {
-        system_rotation.x += PI / 30.0;
-    }
-    if window.is_key_down(KeyboardKey::KEY_E) {
-        system_rotation.y -= PI / 30.0;
-    }
-    if window.is_key_down(KeyboardKey::KEY_R) {
-        system_rotation.y += PI / 30.0;
-    }
-    if window.is_key_down(KeyboardKey::KEY_T) {
-        system_rotation.z -= PI / 30.0;
-    }
-    if window.is_key_down(KeyboardKey::KEY_Y) {
-        system_rotation.z += PI / 30.0;
     }
     
     // Toggle auto-rotation with SPACE
@@ -415,5 +659,45 @@ fn handle_input(
     // Toggle auto-orbit with O
     if window.is_key_pressed(KeyboardKey::KEY_O) {
         *auto_orbit = !*auto_orbit;
+    }
+    
+    // Toggle controls display with H
+    if window.is_key_pressed(KeyboardKey::KEY_H) {
+        *show_controls = !*show_controls;
+    }
+    
+    // Instant Warp con teclas numéricas (1-9)
+    let warp_keys = [
+        (KeyboardKey::KEY_ONE, 0),    // 1 - Sol
+        (KeyboardKey::KEY_TWO, 1),    // 2 - Mercurio
+        (KeyboardKey::KEY_THREE, 2),  // 3 - Venus
+        (KeyboardKey::KEY_FOUR, 3),   // 4 - Tierra
+        (KeyboardKey::KEY_FIVE, 4),   // 5 - Marte
+        (KeyboardKey::KEY_SIX, 5),    // 6 - Júpiter
+        (KeyboardKey::KEY_SEVEN, 6),  // 7 - Saturno
+        (KeyboardKey::KEY_EIGHT, 7),  // 8 - Urano
+        (KeyboardKey::KEY_NINE, 8),   // 9 - Neptuno
+    ];
+    
+    for (key, index) in warp_keys.iter() {
+        if window.is_key_pressed(*key) && *index < bodies.len() {
+            // Calcular posición del planeta en este momento
+            let body = &bodies[*index];
+            let orbit_angle = time * body.orbit_speed;
+            let target_x = orbit_angle.cos() * body.orbit_radius;
+            let target_y = orbit_angle.sin() * body.orbit_radius;
+            
+            // Calcular el offset de cámara objetivo que centra el planeta en pantalla.
+            // Queremos que: center_final.x + orbit_x * target_zoom = screen_center_x (400)
+            // Dado center_final.x = 400 + target_camera_offset.x -> target_camera_offset.x = - orbit_x * target_zoom
+            let target_zoom = warp_system.targets[*index].zoom_level;
+            let target_offset = Vector3::new(-target_x * target_zoom, -target_y * target_zoom, 0.0);
+
+            // Actualizar el target de warp con el offset de cámara corregido
+            warp_system.targets[*index].position = target_offset;
+
+            // Iniciar warp usando el offset y el zoom actuales
+            warp_system.warp_to(*index, *camera_offset, *camera_zoom);
+        }
     }
 }

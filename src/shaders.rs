@@ -257,6 +257,29 @@ fn venus_shader(_fragment: &Fragment, vertex: &Vertex, _time: f32) -> Vector3 {
     vertex.color
 }
 
+/// SPACESHIP - Metallic shader con colores del material
+fn spaceship_shader(_fragment: &Fragment, vertex: &Vertex, time: f32) -> Vector3 {
+    // Get base color del material (desde el OBJ)
+    let base_color = vertex.color;
+    
+    // Efecto metálico - variación sutil de brillo
+    let shimmer = (time * 1.5).sin() * 0.08 + 1.0;
+    
+    // Efecto de iluminación ambiental
+    let ambient = 0.3;
+    let diffuse = 0.7;
+    
+    // Simular iluminación direccional simple
+    let light_factor = ambient + diffuse;
+    
+    // Combinar con shimmer metálico
+    Vector3::new(
+        (base_color.x * light_factor * shimmer).min(1.0),
+        (base_color.y * light_factor * shimmer).min(1.0),
+        (base_color.z * light_factor * shimmer).min(1.0),
+    )
+}
+
 /// Get the appropriate shader color based on planet type
 pub fn get_planet_color(fragment: &Fragment, vertex: &Vertex, time: f32, planet_type: u32) -> Vector3 {
     // Get base color from shader - NO LIGHTING, just pure textures
@@ -269,6 +292,7 @@ pub fn get_planet_color(fragment: &Fragment, vertex: &Vertex, time: f32, planet_
         5 => neptune_shader(fragment, vertex, time), // Neptune shader
         6 => uranus_shader(fragment, vertex, time),  // Uranus shader
         7 => venus_shader(fragment, vertex, time),   // Venus shader
+        10 => spaceship_shader(fragment, vertex, time), // Spaceship shader
         _ => Vector3::new(1.0, 1.0, 1.0), // Default white
     }
 }

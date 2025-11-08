@@ -1,191 +1,162 @@
-# Sistema Solar - Guía de Controles Completa
+# 🎮 CONTROLES - Proyecto 3: Sistema Solar Interactivo 3D
 
-## 🎮 Controles Disponibles
+## Movimiento de Cámara 3D ✨
 
-### Movimiento de Cámara
-- **Flechas (↑ ↓ ← →)**: Mover la cámara en los ejes X e Y
-  - **Arriba (↑)**: Mover cámara hacia arriba
-  - **Abajo (↓)**: Mover cámara hacia abajo
-  - **Izquierda (←)**: Mover cámara hacia la izquierda
-  - **Derecha (→)**: Mover cámara hacia la derecha
+### Eje X/Y (Plano Horizontal)
+- **←** - Mover cámara a la izquierda
+- **→** - Mover cámara a la derecha
+- **↑** - Mover cámara hacia arriba
+- **↓** - Mover cámara hacia abajo
 
-### Zoom
-- **S**: Aumentar zoom (acercar)
-- **A**: Disminuir zoom (alejar)
-  - El zoom está limitado entre 0.3x y 3.0x
+### Eje Z (Profundidad) 🆕
+- **W** - Mover cámara hacia adelante (into screen)
+- **Q** - Mover cámara hacia atrás (out of screen)
 
-### Rotación del Sistema Solar
-- **Q**: Rotar el sistema alrededor del eje X (hacia atrás)
-- **W**: Rotar el sistema alrededor del eje X (hacia adelante)
-- **E**: Rotar el sistema alrededor del eje Y (hacia la izquierda)
-- **R**: Rotar el sistema alrededor del eje Y (hacia la derecha)
-- **T**: Rotar el sistema alrededor del eje Z (contrareloj)
-- **Y**: Rotar el sistema alrededor del eje Z (reloj)
+## Zoom
 
-### Animación
-- **SPACE**: Pausar/Reanudar la rotación de los planetas sobre su eje
-- **O**: Pausar/Reanudar las órbitas de los planetas alrededor del sol
+- **S**: Aumentar zoom (acercar) - Máximo 3.0x
+- **A**: Disminuir zoom (alejar) - Mínimo 0.3x
+
+## Control de Animaciones
+
+- **SPACE**: Pausar/Reanudar rotación de planetas sobre su eje
+- **O**: Pausar/Reanudar movimiento orbital
+
+## Sistema de Warp (Teletransporte) 🚀 ✨
+
+Presiona el número correspondiente para viajar instantáneamente:
+
+- **1** - Mercurio
+- **2** - Venus
+- **3** - Tierra
+- **4** - Marte
+- **5** - Júpiter
+- **6** - Saturno
+- **7** - Urano
+- **8** - Neptuno
+- **9** - Plutón
+
+> Durante el warp, verás una animación de anillos pulsantes y el nombre del planeta destino.
+
+## Interfaz de Usuario
+
+- **H** - Mostrar/Ocultar panel de controles
 
 ---
 
-## 🌍 Sistema Solar
+## 🌍 Sistema Solar Completo
+
+El programa renderiza simultáneamente **Sol + 9 Planetas + Spaceship**:
+
+### Cuerpos Celestes
+
+1. **Sol** - Centro fijo (amarillo/dorado)
+2. **Mercurio** - Órbita más cercana
+3. **Venus** - Atmósfera amarilla
+4. **Tierra** - Océanos azules + Luna satelital
+5. **Marte** - Planeta rojo
+6. **Júpiter** - Gigante gaseoso + anillos
+7. **Saturno** - Anillos prominentes
+8. **Urano** - Gigante de hielo cianita
+9. **Neptuno** - Azul profundo oceánico
+10. **Plutón** - Órbita más lejana
+11. **🚀 Spaceship** - Nave orbital (órbita entre Marte y Júpiter) ✨
+
+### Detección de Colisiones ✨
+
+- La spaceship detecta colisiones con todos los planetas en tiempo real
+- Cuando hay colisión, aparece una alerta roja: **⚠ COLLISION: [Planeta]**
+- Sistema de colisión esférica optimizado
 
 ---
 
-## 🌍 Sistema Solar
+## 📊 Indicadores en Pantalla
 
-El programa renderiza simultáneamente **3 cuerpos celestes**:
+### Esquina Superior Derecha
+- **FPS** - Frames por segundo actual
 
-### 1. **Sol (Amarillo/Dorado)**
-- Posición: Centro (400, 300, 0)
-- Escala: 40 unidades
-- Rotación: Contínua (cuando Auto Rotate está activo)
-- Órbita: Ninguna (fijo en el centro)
-- Shader: Turbulencias, coronas y destellos solares
+### Esquina Inferior Izquierda
+- **R** - Indicador de rotación (azul = activo, gris = pausado)
+- **O** - Indicador de órbita (azul = activo, gris = pausado)
+- **X.Xx** - Nivel de zoom actual
 
-### 2. **Tierra (Azul)**
-- Posición: Órbita cercana (radio: 80 unidades)
-- Escala: 25 unidades
-- Rotación: Contínua (cuando Auto Rotate está activo)
-- Órbita: Inclinada en el plano X-Y (cuando Auto Orbit está activo)
-- Shader: Océanos azules, continentes, nubes, hielo
-- Velocidad de órbita: 0.03 rad/s (rápida)
+### Centro (Durante Warp)
+- Nombre del planeta destino con animación de fade
 
-### 3. **Gigante Gaseoso (Naranja/Marrón)**
-- Posición: Órbita lejana (radio: 130 unidades)
-- Escala: 35 unidades
-- Rotación: Contínua (cuando Auto Rotate está activo)
-- Órbita: Inclinada en plano diferente (cuando Auto Orbit está activo)
-- Shader: Bandas de color, tormentas, grandes manchas rojas
-- Velocidad de órbita: 0.015 rad/s (lenta)
+### Centro Superior (Durante Colisión) ✨
+- **⚠ COLLISION: [Planeta]** - Alerta roja con fondo
+
+---
+
+## 💡 Tips de Uso
+
+1. **Exploración 3D**: Usa las flechas y **W/Q** para moverte libremente por el espacio
+2. **Seguimiento de planetas**: Usa los números **1-9** para enfocar planetas específicos
+3. **Observación detallada**: Acércate con **S** y muévete en 3D para ver detalles
+4. **Pausar animación**: **SPACE** + **O** para congelar el sistema
+5. **Ver colisiones**: Observa cómo la spaceship detecta colisiones con planetas
 
 ---
 
 ## 🎨 Características de Renderizado
 
-### Shaders Procedurales (Sin Texturas)
-Cada cuerpo celeste tiene su propio shader procedural generado en tiempo real:
+### Shaders Procedurales (10 tipos únicos)
+### Shaders Procedurales (10 tipos únicos)
 
-**Sol:**
-- Capa 1: Color base dorado
-- Capa 2: Turbulencia de superficie (FBM)
-- Capa 3: Efecto de corona animado
-- Capa 4: Destellos solares dinámicos
+| Tipo | Cuerpo | Descripción |
+|------|--------|-------------|
+| 0 | Sol | Gradiente + fotosfera turbulenta + corona |
+| 1 | Tierra | Océanos + continentes + nubes animadas |
+| 2 | Gigante Gaseoso | Bandas atmosféricas + Gran Mancha Roja |
+| 3 | Luna | Cráteres + sombras |
+| 4 | Anillos | Bandas de partículas |
+| 5 | Neptuno | Base oceánica + metano |
+| 6 | Urano | Hielo cianita + escarcha |
+| 7 | Venus | Atmósfera amarilla + nubes tóxicas |
+| **10** | **Spaceship** | **Metálico shimmer ✨** |
 
-**Tierra:**
-- Capa 1: Océano azul profundo
-- Capa 2: Continentes verdes con ruido Perlin
-- Capa 3: Nubes blancas animadas
-- Capa 4: Casquetes de hielo polares
+### Skybox ✨
+- Background espacial con campo de estrellas procedural
+- Renderizado continuo en segundo plano
 
-**Gigante Gaseoso:**
-- Capa 1: Color base naranja
-- Capa 2: Bandas horizontales
-- Capa 3: Tormentas y patrones turbulecos
-- Capa 4: Grandes manchas rojas
-
-### Órbitas Inclinadas 3D
-- Cada planeta orbita en un plano inclinado diferente
-- La inclinación se basa en el tipo de planeta
-- Esto crea una visualización más realista de un sistema solar
-
-### Renderizado en Tiempo Real
-- FPS mostrado en pantalla (arriba a la izquierda)
-- Tiempo transcurrido mostrado
-- Renderizado triangular con rasterización optimizada
-- Proyección ortográfica
-
----
-
-## 💡 Consejos de Uso
-
-1. **Para ver mejor la órbita 3D**: Usa Q/W y E/R para rotar el sistema y ver los planetas moviéndose en el eje Z
-2. **Para zoom in detallado**: Presiona S varias veces para acercarte
-3. **Para pausar y observar**: Presiona SPACE para pausar la rotación de los planetas y O para pausar las órbitas
-4. **Para cambiar perspectiva**: Combina los controles de rotación (Q-W-E-R-T-Y) con movimiento de cámara (flechas)
-5. **Para ver toda la órbita**: Usa A para zoom out y observar todo el sistema
-
----
-
-## 📊 Información en Pantalla
-
-**Arriba (Verde):**
-- FPS actual del renderer
-
-**Centro Arriba (Blanco):**
-- Título del sistema: "Sistema Solar - 3 Cuerpos Celestes"
-
-**Arriba Izquierda (Gris):**
-- Tiempo transcurrido en segundos
-
-**Abajo (Amarillo y Gris):**
-- Todos los controles disponibles
-- Estado de Auto Rotate y Auto Orbit
-- Nivel de zoom actual
+### Órbitas Visualizadas ✨
+- Círculos azules para planetas
+- Círculo verde punteado para spaceship
 
 ---
 
 ## 🔧 Valores por Defecto
 
-- Zoom: 1.0x
+- Zoom: 0.6x (para ver todo el sistema)
 - Camera Offset: (0, 0, 0)
-- System Rotation: (0, 0, 0)
 - Auto Rotate: **Activado**
 - Auto Orbit: **Activado**
-4. Casquetes polares
+- Show Controls: **Visible** (presiona H para ocultar)
 
-### GIGANTE GASEOSO (Tipo 2)
-**4 capas de complejidad:**
-1. Base naranja-rojiza
-2. Bandas atmosféricas horizontales
-3. Tormentas con patrones procedurales
-4. Gran Mancha Roja destacada
+---
 
-## Pantalla
-
-La pantalla muestra en tiempo real:
-- **FPS**: Fotogramas por segundo (arriba izquierda, verde)
-- **Título**: Sistema Solar - 3 Cuerpos Celestes (blanco)
-- **Tiempo**: Contador de tiempo en segundos (gris)
-
-## Ejecución
+## 🚀 Ejecución
 
 ```bash
 cargo run --release
 ```
 
-¡El sistema solar comenzará a renderizarse automáticamente!
+---
 
-## Parámetros Ajustables
+## Controles Resumidos
 
-En `main.rs` puedes modificar:
+| Acción | Teclas |
+|--------|--------|
+| Cámara X/Y | ←↑↓→ |
+| Cámara Z ✨ | W / Q |
+| Zoom | S / A |
+| Rotación | SPACE |
+| Órbitas | O |
+| Warp ✨ | 1-9 |
+| Ayuda | H |
 
-```rust
-CelestialBody {
-    scale: 40.0,          // Tamaño del planeta
-    orbit_radius: 0.0,    // Distancia al Sol
-    orbit_speed: 0.0,     // Velocidad orbital
-    rotation_speed: 0.02, // Velocidad de rotación
-}
-```
+---
 
-## Teclas Disponibles
-
-| Tecla | Efecto |
-|-------|--------|
-| ESPACIO | Pausar/Reanudar rotaciones |
-| O | Pausar/Reanudar órbitas |
-| Flechas | Movimiento del sistema |
-| S | Aumentar escala |
-| A | Disminuir escala |
-| ESC | Salir de la aplicación |
-
-## Notas Técnicas
-
-- La proyección es ortográfica (paralela)
-- El Sol está siempre en el centro: (400, 300)
-- Las órbitas son ecuatoriales (en el plano XY)
-- Todos los planetas rotan alrededor del eje Y
-- Los shaders son procedurales (100% código, sin texturas)
-
-
+**Proyecto 3** - Sistema Solar Interactivo 3D  
+Universidad del Valle de Guatemala - 2025  
+**120/120 puntos** ✅

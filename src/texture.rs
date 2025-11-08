@@ -1,6 +1,5 @@
 use raylib::math::Vector3;
-use image::{DynamicImage, GenericImageView};
-use std::path::Path;
+use image;
 
 #[derive(Clone)]
 pub struct Texture {
@@ -23,6 +22,7 @@ impl Texture {
     }
 
     /// Sample texture at UV coordinates (0.0 - 1.0 range)
+    #[allow(dead_code)]
     pub fn sample(&self, u: f32, v: f32) -> Vector3 {
         // Wrap UV coordinates
         let u = u.fract();

@@ -121,6 +121,7 @@ fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
 }
 
 /// Calculate lighting based on normal and light direction
+#[allow(dead_code)]
 fn calculate_lighting(normal: Vector3, light_dir: Vector3, view_dir: Vector3) -> f32 {
     // Normalize vectors
     let n = normalize(normal);
@@ -139,6 +140,7 @@ fn calculate_lighting(normal: Vector3, light_dir: Vector3, view_dir: Vector3) ->
 }
 
 /// Normalize a vector
+#[allow(dead_code)]
 fn normalize(v: Vector3) -> Vector3 {
     let len = (v.x * v.x + v.y * v.y + v.z * v.z).sqrt();
     if len > 0.0001 {
@@ -149,6 +151,7 @@ fn normalize(v: Vector3) -> Vector3 {
 }
 
 /// Reflect vector v around normal n
+#[allow(dead_code)]
 fn reflect(v: Vector3, n: Vector3) -> Vector3 {
     let dot2 = 2.0 * (v.x * n.x + v.y * n.y + v.z * n.z);
     Vector3::new(
@@ -257,6 +260,29 @@ fn venus_shader(_fragment: &Fragment, vertex: &Vertex, _time: f32) -> Vector3 {
     vertex.color
 }
 
+/// SPACESHIP - Metallic shader con colores del material
+fn spaceship_shader(_fragment: &Fragment, vertex: &Vertex, time: f32) -> Vector3 {
+    // Get base color del material (desde el OBJ)
+    let base_color = vertex.color;
+    
+    // Efecto metálico - variación sutil de brillo
+    let shimmer = (time * 1.5).sin() * 0.08 + 1.0;
+    
+    // Efecto de iluminación ambiental
+    let ambient = 0.3;
+    let diffuse = 0.7;
+    
+    // Simular iluminación direccional simple
+    let light_factor = ambient + diffuse;
+    
+    // Combinar con shimmer metálico
+    Vector3::new(
+        (base_color.x * light_factor * shimmer).min(1.0),
+        (base_color.y * light_factor * shimmer).min(1.0),
+        (base_color.z * light_factor * shimmer).min(1.0),
+    )
+}
+
 /// Get the appropriate shader color based on planet type
 pub fn get_planet_color(fragment: &Fragment, vertex: &Vertex, time: f32, planet_type: u32) -> Vector3 {
     // Get base color from shader - NO LIGHTING, just pure textures
@@ -269,6 +295,7 @@ pub fn get_planet_color(fragment: &Fragment, vertex: &Vertex, time: f32, planet_
         5 => neptune_shader(fragment, vertex, time), // Neptune shader
         6 => uranus_shader(fragment, vertex, time),  // Uranus shader
         7 => venus_shader(fragment, vertex, time),   // Venus shader
+        10 => spaceship_shader(fragment, vertex, time), // Spaceship shader
         _ => Vector3::new(1.0, 1.0, 1.0), // Default white
     }
 }

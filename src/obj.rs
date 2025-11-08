@@ -2,14 +2,16 @@ use crate::vertex::Vertex;
 use crate::texture::Texture;
 use raylib::math::{Vector2, Vector3};
 use tobj;
-use std::path::Path;
 
 #[derive(Clone, Debug)]
 pub struct Material {
+    #[allow(dead_code)]
     pub name: String,
     pub ambient: Vector3,
     pub diffuse: Vector3,
+    #[allow(dead_code)]
     pub specular: Vector3,
+    #[allow(dead_code)]
     pub shininess: f32,
     pub texture_path: Option<String>,
 }
@@ -17,7 +19,9 @@ pub struct Material {
 pub struct Obj {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
+    #[allow(dead_code)]
     pub materials: Vec<Material>,
+    #[allow(dead_code)]
     pub mesh_materials: Vec<Option<usize>>, // Material index for each mesh
     pub texture: Option<Texture>,
 }
@@ -217,6 +221,7 @@ impl Obj {
         &self.texture
     }
 
+    #[allow(dead_code)]
     pub fn get_materials(&self) -> &Vec<Material> {
         &self.materials
     }

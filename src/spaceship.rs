@@ -11,6 +11,8 @@ pub struct Spaceship {
     pub orbit_radius: f32, // Radio de órbita alrededor del sistema
     pub orbit_speed: f32,  // Velocidad de órbita
     pub scale: f32,
+    pub warp_offset: Vector3, // Offset adicional cuando está en warp mode
+    pub is_warping: bool,     // Indica si está siguiendo un warp
 }
 
 impl Spaceship {
@@ -28,6 +30,8 @@ impl Spaceship {
             orbit_radius: 180.0,
             orbit_speed: 0.15, // Velocidad moderada
             scale: 35.0, // Escala mucho mayor para que sea bien visible
+            warp_offset: Vector3::zero(),
+            is_warping: false,
         })
     }
     
@@ -39,6 +43,12 @@ impl Spaceship {
             center.y + orbit_angle.sin() * self.orbit_radius,
             center.z, // Mismo plano que los planetas
         )
+    }
+    
+    /// Actualiza el estado de warp de la nave
+    pub fn update_warp(&mut self, warp_offset: Vector3, is_warping: bool) {
+        self.warp_offset = warp_offset;
+        self.is_warping = is_warping;
     }
     
     /// Calcula la rotación de la nave para que mire hacia la dirección de movimiento

@@ -215,7 +215,7 @@ fn main() {
     let skybox = Skybox::new(300, window_width as u32, window_height as u32);
     
     // Crear la nave espacial
-    let spaceship = match Spaceship::new() {
+    let mut spaceship = match Spaceship::new() {
         Ok(ship) => {
             println!("✓ Nave espacial cargada exitosamente (nuevo modelo SpaceShip.obj)");
             println!("  - Vértices: {}", ship.get_vertices().len());
@@ -297,22 +297,32 @@ fn main() {
             }
         }
 
-        // Center point for the solar system (affected by camera offset)
-        let center = Vector3::new(400.0 + camera_offset.x, 300.0 + camera_offset.y, 0.0 + camera_offset.z);
+        // Center point for the solar system (affected by camera X/Y offset only)
+        let center = Vector3::new(400.0 + camera_offset.x, 300.0 + camera_offset.y, 0.0);
         
-        // Renderizar órbitas planetarias (círculos simples fijos)
+        // Renderizar órbitas planetarias (círculos rotados en 3D)
         for body in bodies.iter() {
             if body.orbit_radius > 0.0 {
                 let orbit_color = Vector3::new(0.4, 0.5, 0.7); // Color azul brillante
                 let segments = 200; // Más segmentos para líneas continuas
                 
-                // Generar puntos de la órbita circular simple
+                // Generar puntos de la órbita circular y rotarlos en 3D
                 for i in 0..segments {
                     let angle = (i as f32 / segments as f32) * 2.0 * std::f32::consts::PI;
                     
-                    // Punto en el plano eclíptico (sin rotar)
-                    let x = (center.x + angle.cos() * body.orbit_radius * camera_zoom) as i32;
-                    let y = (center.y + angle.sin() * body.orbit_radius * camera_zoom) as i32;
+                    // Punto en el plano eclíptico 3D (antes de rotar)
+                    let orbit_point_3d = Vector3::new(
+                        angle.cos() * body.orbit_radius * camera_zoom,
+                        angle.sin() * body.orbit_radius * camera_zoom,
+                        0.0
+                    );
+                    
+                    // Aplicar rotación 3D del sistema
+                    let rotated_point = rotate_point_around_center(orbit_point_3d, Vector3::zero(), system_rotation);
+                    
+                    // Proyectar a 2D
+                    let x = (center.x + rotated_point.x) as i32;
+                    let y = (center.y + rotated_point.y) as i32;
                     
                     // Dibujar el punto de la órbita con grosor (3x3 píxeles)
                     for dx in -1..=1 {
@@ -329,15 +339,26 @@ fn main() {
             }
         }
         
-        // Renderizar órbita de la nave espacial (color diferente)
+        // Renderizar órbita de la nave espacial (rotada en 3D)
         if let Some(ref ship) = spaceship {
             let ship_orbit_color = Vector3::new(0.6, 0.8, 0.4); // Verde claro
             let segments = 200;
             
             for i in 0..segments {
                 let angle = (i as f32 / segments as f32) * 2.0 * std::f32::consts::PI;
-                let x = (center.x + angle.cos() * ship.orbit_radius * camera_zoom) as i32;
-                let y = (center.y + angle.sin() * ship.orbit_radius * camera_zoom) as i32;
+                
+                // Punto orbital 3D antes de rotar
+                let orbit_point_3d = Vector3::new(
+                    angle.cos() * ship.orbit_radius * camera_zoom,
+                    angle.sin() * ship.orbit_radius * camera_zoom,
+                    0.0
+                );
+                
+                // Aplicar rotación 3D del sistema
+                let rotated_point = rotate_point_around_center(orbit_point_3d, Vector3::zero(), system_rotation);
+                
+                let x = (center.x + rotated_point.x) as i32;
+                let y = (center.y + rotated_point.y) as i32;
                 
                 // Dibujar órbita de la nave con línea punteada (más sutil)
                 if i % 4 == 0 {
@@ -367,22 +388,26 @@ fn main() {
             let body_translation = if auto_orbit {
                 let orbit_angle = time * body.orbit_speed;
                 
-                // Órbitas circulares perfectas en el plano X-Y
-                // IMPORTANTE: Aplicar el mismo zoom que a las órbitas para mantener alineación
-                let orbit_x = orbit_angle.cos() * body.orbit_radius * camera_zoom;
-                let orbit_y = orbit_angle.sin() * body.orbit_radius * camera_zoom;
+                // Posición orbital en 3D (antes de rotar el sistema)
+                let orbit_point_3d = Vector3::new(
+                    orbit_angle.cos() * body.orbit_radius * camera_zoom,
+                    orbit_angle.sin() * body.orbit_radius * camera_zoom,
+                    0.0
+                );
+                
+                // Aplicar rotación 3D del sistema completo
+                let rotated_point = rotate_point_around_center(orbit_point_3d, Vector3::zero(), system_rotation);
                 
                 Vector3::new(
-                    center.x + orbit_x,
-                    center.y + orbit_y,
-                    center.z, // Mantener en el mismo plano Z que el centro
+                    center.x + rotated_point.x,
+                    center.y + rotated_point.y,
+                    center.z + rotated_point.z,
                 )
             } else {
                 center
             };
 
-            // MANTENER PLANETAS FIJOS EN SUS ÓRBITAS - NO ROTAR POSICIONES
-            // Solo crear el model_matrix directamente sin rotación de sistema
+            // Crear model matrix con escala aplicada
             let model_matrix = create_model_matrix(body_translation, body.scale * camera_zoom, body_rotation);
             let uniforms = Uniforms {
                 model_matrix,
@@ -439,15 +464,36 @@ fn main() {
             }
         }
 
-        // Renderizar la nave espacial (orbita en el plano eclíptico)
+        // Renderizar la nave espacial (orbita en el plano eclíptico rotado)
         let mut collision_detected = false;
         let mut collision_planet_idx: Option<usize> = None;
         
-        if let Some(ref ship) = spaceship {
-            let ship_position = ship.get_position(time, center);
+        if let Some(ref mut ship) = spaceship {
+            // Actualizar estado de warp de la nave (solo para tracking, no afecta posición)
+            ship.update_warp(camera_offset, warp_system.is_warping);
+            
+            // Calcular posición orbital 3D de la nave
+            // IMPORTANTE: center ya incluye camera_offset, así que la nave se mueve automáticamente con el warp
+            let orbit_angle_ship = time * ship.orbit_speed;
+            let ship_orbit_3d = Vector3::new(
+                orbit_angle_ship.cos() * ship.orbit_radius * camera_zoom,
+                orbit_angle_ship.sin() * ship.orbit_radius * camera_zoom,
+                0.0
+            );
+            
+            // Aplicar rotación 3D del sistema
+            let rotated_ship_orbit = rotate_point_around_center(ship_orbit_3d, Vector3::zero(), system_rotation);
+            
+            // La posición usa center, que ya incluye camera_offset (por lo tanto, ya incluye el warp)
+            let ship_position = Vector3::new(
+                center.x + rotated_ship_orbit.x,
+                center.y + rotated_ship_orbit.y,
+                center.z + rotated_ship_orbit.z
+            );
+            
             let ship_rotation = ship.get_rotation(time);
             
-            // Check for collisions with planets
+            // Check for collisions with planets (usar posiciones rotadas)
             let mut planet_positions: Vec<(Vector3, f32)> = Vec::new();
             for body in bodies.iter() {
                 let orbit_angle = if auto_orbit {
@@ -455,9 +501,13 @@ fn main() {
                 } else {
                     0.0
                 };
-                let orbit_x = orbit_angle.cos() * body.orbit_radius * camera_zoom;
-                let orbit_y = orbit_angle.sin() * body.orbit_radius * camera_zoom;
-                let planet_pos = Vector3::new(center.x + orbit_x, center.y + orbit_y, center.z);
+                let orbit_point_3d = Vector3::new(
+                    orbit_angle.cos() * body.orbit_radius * camera_zoom,
+                    orbit_angle.sin() * body.orbit_radius * camera_zoom,
+                    0.0
+                );
+                let rotated_orbit = rotate_point_around_center(orbit_point_3d, Vector3::zero(), system_rotation);
+                let planet_pos = Vector3::new(center.x + rotated_orbit.x, center.y + rotated_orbit.y, center.z + rotated_orbit.z);
                 planet_positions.push((planet_pos, body.scale * camera_zoom));
             }
             
@@ -633,12 +683,12 @@ fn handle_input(
         camera_offset.y += 10.0;
     }
     
-    // Z-axis camera movement (3D depth control)
+    // 3D Rotation of the entire system (W/Q for X-axis rotation)
     if window.is_key_down(KeyboardKey::KEY_W) {
-        camera_offset.z += 10.0;  // Move camera forward (into screen)
+        system_rotation.x += 0.02;  // Rotate system down (view from above)
     }
     if window.is_key_down(KeyboardKey::KEY_Q) {
-        camera_offset.z -= 10.0;  // Move camera backward (out of screen)
+        system_rotation.x -= 0.02;  // Rotate system up (view from below)
     }
     
     // Zoom (S/A keys) - RESTAURADO

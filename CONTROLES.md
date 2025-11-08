@@ -159,4 +159,3 @@ cargo run --release
 
 **Proyecto 3** - Sistema Solar Interactivo 3D  
 Universidad del Valle de Guatemala - 2025  
-**120/120 puntos** ✅

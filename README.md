@@ -35,9 +35,11 @@ Un renderer 3D que renderiza **simultáneamente el Sol y 9 planetas** en órbita
 
 5. **Sistema de Warp (20 pts)** ✅
    - Teclas 1-9 para viajar instantáneamente a cada planeta
+   - **Spaceship viaja junto con la cámara durante el warp** 🚀
    - Animación de anillos pulsantes durante el warp
    - Transición suave de cámara
    - Indicador visual del planeta destino
+   - La nave mantiene su órbita relativa al destino
 
 6. **Zoom (5 pts)** ✅
    - Teclas S (acercar) / A (alejar)
@@ -250,6 +252,29 @@ pub fn check_sphere_collision(
 }
 ```
 
+### Sistema de Warp con Spaceship
+
+El sistema de warp permite teleportarse instantáneamente a cualquier planeta del sistema solar. Durante el warp:
+
+1. **La cámara** se mueve suavemente hacia el planeta destino
+2. **La spaceship** viaja junto con la cámara, manteniendo su posición relativa
+3. **Animación de zoom**: Alejamiento gradual durante el viaje, luego acercamiento al destino
+4. **Indicador visual**: Muestra el nombre del planeta destino durante el warp
+
+```rust
+// Durante el warp, la nave se sincroniza con el offset de cámara
+if ship.is_warping {
+    ship.warp_offset = camera_offset;
+    // La nave aparece en la misma posición relativa al nuevo destino
+}
+```
+
+La spaceship automáticamente:
+- ✅ Se teletransporta junto con la cámara
+- ✅ Mantiene su órbita circular alrededor del nuevo punto focal
+- ✅ Continúa su movimiento orbital después del warp
+- ✅ Detecta colisiones con los planetas en el nuevo destino
+
 ---
 
 ## 📦 Dependencias
@@ -269,12 +294,18 @@ pub fn check_sphere_collision(
 | Órbitas y rotaciones | 10 | ✅ |
 | Skybox | 10 | ✅ |
 | Spaceship | 10 | ✅ |
-| Sistema warp | 20 | ✅ |
+| Sistema warp + Spaceship | 20 | ✅ |
 | Zoom | 5 | ✅ |
 | Órbitas visualizadas | 5 | ✅ |
 | Cámara 3D (X/Y/Z) | 40 | ✅ |
 | Collision Detection | 10 | ✅ |
 | **TOTAL** | **120** | **✅ 120/120** |
+
+**🌟 Características Extra Implementadas:**
+- ✨ Spaceship viaja junto con el warp (sincronización perfecta)
+- ✨ Rotación 3D del sistema solar completo (W/Q keys)
+- ✨ 10 shaders procedurales únicos para cada cuerpo celeste
+- ✨ UI minimalista con panel de ayuda toggleable (H key)
 
 ---
 
@@ -287,9 +318,12 @@ pub fn check_sphere_collision(
 - Shaders procedurales multi-capa
 - Mecánica orbital realista
 - Detección de colisiones 3D
+- **Sistema de warp con sincronización de objetos** 🚀
+- **Rotación 3D del plano eclíptico completo**
 - Sistemas de partículas (skybox)
 - Gestión de framebuffer
 - Interpolación baricéntrica
+- Interpolación suave (ease-in-out) para animaciones
 
 ---
 

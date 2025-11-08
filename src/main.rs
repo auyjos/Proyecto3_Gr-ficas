@@ -24,7 +24,6 @@ use crate::shaders::get_planet_color;
 use crate::texture::Texture;
 use crate::solar_system::{create_solar_system, get_unique_model_paths};
 use crate::skybox::Skybox;
-use crate::orbits::draw_orbit;
 use crate::warp::{WarpSystem, WarpTarget};
 use crate::spaceship::Spaceship;
 use crate::collision::check_spaceship_collisions;
@@ -36,7 +35,6 @@ use obj::Obj;
 use raylib::prelude::*;
 use std::thread;
 use std::time::Duration;
-use std::f32::consts::PI;
 
 pub struct Uniforms {
     pub model_matrix: Matrix,
@@ -152,7 +150,7 @@ fn main() {
 
     let (mut window, thread) = raylib::init()
         .size(window_width, window_height)
-        .title("Rust Graphics - Renderer Example")
+        .title("Space Travel - Jose Auyon")
         .log_level(TraceLogLevel::LOG_WARNING) // Suppress INFO messages
         .build();
 

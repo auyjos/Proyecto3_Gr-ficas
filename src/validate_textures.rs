@@ -80,6 +80,7 @@ pub fn validate_texture_paths() {
 }
 
 /// Validates texture loading at runtime
+#[allow(dead_code)]
 pub fn validate_texture_loading() {
     use crate::obj::Obj;
     

@@ -1,7 +1,6 @@
 // warp.rs - Sistema de teleportación instantánea (warping)
 
 use raylib::prelude::*;
-use std::f32::consts::PI;
 
 /// Representa un objetivo de warp
 #[derive(Clone)]
@@ -119,9 +118,10 @@ impl WarpSystem {
 }
 
 /// Calcular posición de destino para un planeta
+#[allow(dead_code)]
 pub fn calculate_planet_target(
     planet_orbit_radius: f32,
-    planet_scale: f32,
+    _planet_scale: f32,
     center: Vector3,
     time: f32,
     orbit_speed: f32,

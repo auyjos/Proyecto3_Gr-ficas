@@ -1,16 +1,16 @@
-use raylib::math::Vector3;
-
 /// Tipos de cuerpos celestes con shaders específicos
 #[derive(Clone, Copy, Debug)]
 pub enum CelestialType {
     Sun = 0,
     RockyPlanet = 1,
     GasGiant = 2,
+    #[allow(dead_code)]
     Moon = 3,
+    #[allow(dead_code)]
     Ring = 4,
     IceGiant = 5,
-    Venus = 7,
     Uranus = 6,
+    Venus = 7,
 }
 
 /// Definición de un cuerpo celeste en el sistema solar
@@ -30,6 +30,7 @@ pub struct CelestialBody {
 /// Definición de una luna
 #[derive(Clone)]
 pub struct Moon {
+    #[allow(dead_code)]
     pub name: String,
     pub scale: f32,
     pub orbit_radius: f32,

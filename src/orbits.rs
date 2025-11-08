@@ -5,6 +5,7 @@ use crate::framebuffer::Framebuffer;
 use std::f32::consts::PI;
 
 /// Dibuja una órbita circular en el framebuffer
+#[allow(dead_code)]
 pub fn draw_orbit(
     framebuffer: &mut Framebuffer,
     center_x: f32,
@@ -29,6 +30,7 @@ pub fn draw_orbit(
 }
 
 /// Dibuja una línea entre dos puntos usando el algoritmo de Bresenham
+#[allow(dead_code)]
 fn draw_line(framebuffer: &mut Framebuffer, x0: f32, y0: f32, x1: f32, y1: f32, color: Vector3) {
     let mut x0 = x0 as i32;
     let mut y0 = y0 as i32;

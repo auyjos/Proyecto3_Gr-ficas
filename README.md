@@ -329,13 +329,23 @@ La spaceship automáticamente:
 
 ## 📹 Video Demostrativo
 
-[Pendiente de subir]
+🎥 **[Ver Video Completo en YouTube](https://youtu.be/-ojTlGkLFYw)**
+
+[![Sistema Solar Interactivo 3D - Video Demo](https://img.youtube.com/vi/-ojTlGkLFYw/maxresdefault.jpg)](https://youtu.be/-ojTlGkLFYw)
+
+**Contenido del Video:**
+- ✨ Sistema solar completo con 9 planetas + Sol + Spaceship
+- 🚀 Sistema de warp en acción (teletransporte a planetas)
+- 🎮 Movimiento 3D de cámara (X/Y/Z)
+- 🌟 Rotación 3D del plano eclíptico completo
+- ⚠️ Detección de colisiones en tiempo real
+- 🎨 Shaders procedurales y efectos visuales
 
 ---
 
 ## 👨‍💻 Autor
 
-**Jose Rodrigo Barrera García**  
+**Jose Andres Auyon Cobar**  
 Universidad del Valle de Guatemala  
 Gráficas por Computadora - 2025
 
@@ -347,5 +357,5 @@ Este proyecto es parte de un curso de gráficas por computadora con fines educat
 
 ---
 
-**Última Actualización**: 7 de noviembre, 2025  
+**Última Actualización**: 8 de noviembre, 2025  
 **Versión del Proyecto**: 3.0 (Final)

@@ -1,5 +1,3 @@
-use raylib::prelude::*;
-
 /// Represents a moon orbiting a planet
 #[allow(dead_code)]
 pub struct Moon {

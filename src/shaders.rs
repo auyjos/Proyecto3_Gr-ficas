@@ -121,6 +121,7 @@ fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
 }
 
 /// Calculate lighting based on normal and light direction
+#[allow(dead_code)]
 fn calculate_lighting(normal: Vector3, light_dir: Vector3, view_dir: Vector3) -> f32 {
     // Normalize vectors
     let n = normalize(normal);
@@ -139,6 +140,7 @@ fn calculate_lighting(normal: Vector3, light_dir: Vector3, view_dir: Vector3) ->
 }
 
 /// Normalize a vector
+#[allow(dead_code)]
 fn normalize(v: Vector3) -> Vector3 {
     let len = (v.x * v.x + v.y * v.y + v.z * v.z).sqrt();
     if len > 0.0001 {
@@ -149,6 +151,7 @@ fn normalize(v: Vector3) -> Vector3 {
 }
 
 /// Reflect vector v around normal n
+#[allow(dead_code)]
 fn reflect(v: Vector3, n: Vector3) -> Vector3 {
     let dot2 = 2.0 * (v.x * n.x + v.y * n.y + v.z * n.z);
     Vector3::new(

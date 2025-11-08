@@ -36,6 +36,7 @@ impl Spaceship {
     }
     
     /// Calcula la posición de la nave basada en el tiempo (orbita circular)
+    #[allow(dead_code)]
     pub fn get_position(&self, time: f32, center: Vector3) -> Vector3 {
         let orbit_angle = time * self.orbit_speed;
         Vector3::new(
